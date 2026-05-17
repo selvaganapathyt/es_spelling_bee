@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🐝 Spanish Spelling Bee</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  .card {
+    background: white;
+    border-radius: 28px;
+    padding: 36px 28px 28px;
+    max-width: 480px;
+    width: 100%;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.3);
+    text-align: center;
+  }
+
+  /* Header */
+  .header { margin-bottom: 20px; }
+  h1 { font-size: 1.6rem; color: #4a0080; }
+  .word-counter { color: #a78bfa; font-size: 0.9rem; margin-top: 4px; font-weight: 600; }
+
+  /* Progress */
+  .progress-wrap { background: #ede9fe; border-radius: 99px; height: 10px; margin-bottom: 24px; }
+  .progress-bar { height: 10px; border-radius: 99px; background: linear-gradient(90deg,#a855f7,#6366f1); transition: width 0.4s ease; }
+
+  /* Score row */
+  .score-row {
+    display: flex;
+    justify-content: center;
+    gap: 28px;
+    margin-bottom: 28px;
+  }
+  .score-box { text-align: center; }
+  .score-num { font-size: 2rem; font-weight: 900; line-height: 1; }
+  .score-label { font-size: 0.7rem; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+  .s-correct .score-num { color: #22c55e; }
+  .s-wrong .score-num { color: #ef4444; }
+  .s-left .score-num { color: #8b5cf6; }
+
+  /* Main word display */
+  .word-panel {
+    background: linear-gradient(135deg, #f5f0ff, #ede9fe);
+    border-radius: 20px;
+    padding: 32px 20px;
+    margin-bottom: 24px;
+    border: 2px solid #d8b4fe;
+  }
+  .english-label { font-size: 0.8rem; color: #a78bfa; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }
+  .english-word { font-size: 2.2rem; font-weight: 900; color: #1e1b4b; margin-bottom: 22px; line-height: 1.2; }
+
+  /* Speak button */
+  .btn-speak {
+    background: linear-gradient(135deg, #8b5cf6, #6366f1);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 14px 32px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 6px 20px rgba(99,102,241,0.4);
+    transition: transform 0.15s, box-shadow 0.15s;
+    margin-bottom: 14px;
+  }
+  .btn-speak:hover { transform: scale(1.05); box-shadow: 0 8px 25px rgba(99,102,241,0.5); }
+  .btn-speak:active { transform: scale(0.97); }
+  .btn-speak.speaking { animation: pulse 0.8s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
+
+  /* Reveal answer */
+  .reveal-wrap { margin-top: 6px; }
+  .btn-reveal {
+    background: none;
+    border: 2px dashed #d8b4fe;
+    color: #9333ea;
+    border-radius: 50px;
+    padding: 7px 20px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-reveal:hover { background: #faf5ff; border-color: #8b5cf6; }
+  .answer-reveal {
+    margin-top: 12px;
+    background: #1e1b4b;
+    color: #e9d5ff;
+    border-radius: 12px;
+    padding: 12px 20px;
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: 2px;
+    display: none;
+  }
+
+  /* Yes / No buttons */
+  .judge-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+  .btn-yes, .btn-no {
+    border: none;
+    border-radius: 18px;
+    padding: 22px 10px;
+    font-size: 1.3rem;
+    font-weight: 900;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .btn-yes {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: white;
+    box-shadow: 0 6px 20px rgba(34,197,94,0.4);
+  }
+  .btn-no {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    box-shadow: 0 6px 20px rgba(239,68,68,0.4);
+  }
+  .btn-yes:hover { transform: scale(1.04); box-shadow: 0 8px 26px rgba(34,197,94,0.5); }
+  .btn-no:hover  { transform: scale(1.04); box-shadow: 0 8px 26px rgba(239,68,68,0.5); }
+  .btn-yes:active, .btn-no:active { transform: scale(0.96); }
+  .btn-emoji { font-size: 2rem; }
+  .btn-label { font-size: 0.75rem; letter-spacing: 1px; opacity: 0.9; }
+
+  /* Feedback flash */
+  .feedback-flash {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8rem;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.1s;
+    z-index: 99;
+  }
+  .feedback-flash.show { opacity: 1; }
+  .feedback-flash.hide { opacity: 0; transition: opacity 0.6s; }
+
+  /* Repeat button */
+  .btn-repeat {
+    width: 100%;
+    padding: 11px;
+    border: 2px solid #e5e7eb;
+    background: white;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    color: #6b7280;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 10px;
+  }
+  .btn-repeat:hover { border-color: #8b5cf6; color: #7c3aed; background: #faf5ff; }
+
+  /* Voice selector */
+  .voice-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #f9fafb;
+    border-radius: 12px;
+    padding: 8px 12px;
+    margin-top: 4px;
+  }
+  .voice-row label { font-size: 0.8rem; color: #6b7280; white-space: nowrap; }
+  .voice-row select {
+    flex: 1;
+    font-size: 0.82rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 5px 8px;
+    color: #374151;
+    background: white;
+    cursor: pointer;
+  }
+  .speed-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+    padding: 0 4px;
+  }
+  .speed-row label { font-size: 0.8rem; color: #6b7280; white-space: nowrap; }
+  .speed-row input[type=range] { flex: 1; accent-color: #8b5cf6; }
+  .speed-val { font-size: 0.8rem; color: #8b5cf6; font-weight: 700; width: 30px; }
+
+  /* End screen */
+  .end-screen { display: none; }
+  .end-trophy { font-size: 5rem; margin-bottom: 8px; }
+  .end-title { font-size: 1.8rem; font-weight: 900; color: #4a0080; margin-bottom: 8px; }
+  .end-score { font-size: 4rem; font-weight: 900; color: #8b5cf6; margin-bottom: 8px; }
+  .end-pct { font-size: 1.1rem; color: #6b7280; margin-bottom: 6px; }
+  .end-msg { font-size: 1.05rem; color: #374151; margin-bottom: 24px; }
+
+  .btn-again {
+    background: linear-gradient(135deg, #8b5cf6, #6366f1);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 16px 40px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 6px 20px rgba(99,102,241,0.4);
+    margin-bottom: 24px;
+  }
+  .btn-again:hover { transform: scale(1.03); }
+
+  /* Missed words */
+  .missed-box { text-align: left; }
+  .missed-title { font-size: 1rem; font-weight: 700; color: #dc2626; margin-bottom: 10px; }
+  .missed-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    max-height: 260px;
+    overflow-y: auto;
+  }
+  .missed-item {
+    background: #fef2f2;
+    border-radius: 8px;
+    padding: 7px 10px;
+    font-size: 0.85rem;
+  }
+  .missed-es { font-weight: 800; color: #991b1b; }
+  .missed-en { color: #9ca3af; font-size: 0.75rem; }
+</style>
+</head>
+<body>
+
+<div class="feedback-flash" id="flash"></div>
+
+<div class="card">
+  <!-- QUIZ SCREEN -->
+  <div id="quizScreen">
+    <div class="header">
+      <h1>🐝 Spanish Spelling Bee</h1>
+      <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-top:4px;">
+        <div class="word-counter" id="wordCounter">Word 1 of 250</div>
+        <button onclick="shuffleNow()" style="background:#ede9fe;border:none;border-radius:50px;padding:4px 12px;font-size:0.82rem;color:#7c3aed;font-weight:700;cursor:pointer;">🔀 Shuffle</button>
+      </div>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-bar" id="progressBar" style="width:0%"></div>
+    </div>
+
+    <div class="score-row">
+      <div class="score-box s-correct">
+        <div class="score-num" id="numCorrect">0</div>
+        <div class="score-label">✅ Got it</div>
+      </div>
+      <div class="score-box s-left">
+        <div class="score-num" id="numLeft">250</div>
+        <div class="score-label">📋 Left</div>
+      </div>
+      <div class="score-box s-wrong">
+        <div class="score-num" id="numWrong">0</div>
+        <div class="score-label">❌ Missed</div>
+      </div>
+    </div>
+
+    <div class="word-panel">
+      <button class="btn-speak" id="btnSpeak" onclick="speakWord()">
+        <span>🔊</span> <span id="speakLabel">Say the Word</span>
+      </button>
+
+      <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;justify-content:center;">
+        <button class="btn-reveal" id="btnMeaning" onclick="toggleMeaning()">💬 Show meaning</button>
+        <button class="btn-reveal" id="btnSpellOut" onclick="spellOut()">🔤 Spell it out</button>
+        <button class="btn-reveal" id="btnReveal" onclick="toggleReveal()">👁 Show spelling</button>
+      </div>
+      <div class="answer-reveal" id="meaningReveal" style="font-size:1.3rem;letter-spacing:0;margin-top:10px;display:none;"></div>
+      <div class="answer-reveal" id="answerReveal" style="margin-top:6px;display:none;"></div>
+    </div>
+
+    <!-- YES / NO -->
+    <div class="judge-row">
+      <button class="btn-yes" onclick="judge(true)">
+        <span class="btn-emoji">✅</span>
+        <span class="btn-label">GOT IT RIGHT</span>
+      </button>
+      <button class="btn-no" onclick="judge(false)">
+        <span class="btn-emoji">❌</span>
+        <span class="btn-label">GOT IT WRONG</span>
+      </button>
+    </div>
+
+    <button class="btn-repeat" onclick="speakWord()">🔁 Repeat the word</button>
+
+    <!-- Voice & Speed controls -->
+    <div class="voice-row">
+      <label>🎙 Voice:</label>
+      <select id="voiceSelect" onchange="saveVoice()"></select>
+    </div>
+    <div class="speed-row">
+      <label>🐢 Speed:</label>
+      <input type="range" id="speedRange" min="0.5" max="1.5" step="0.05" value="1.0" oninput="updateSpeed(this.value)">
+      <span class="speed-val" id="speedVal">1.0×</span>
+    </div>
+    <div class="speed-row">
+      <label>🎵 Pitch:</label>
+      <input type="range" id="pitchRange" min="0.5" max="2.0" step="0.05" value="1.3" oninput="updatePitch(this.value)">
+      <span class="speed-val" id="pitchVal">1.3×</span>
+    </div>
+  </div>
+
+  <!-- END SCREEN -->
+  <div class="end-screen" id="endScreen">
+    <div class="end-trophy" id="endTrophy">🏆</div>
+    <div class="end-title">Practice Complete!</div>
+    <div class="end-score" id="endScore">0/0</div>
+    <div class="end-pct" id="endPct"></div>
+    <div class="end-msg" id="endMsg"></div>
+    <button class="btn-again" onclick="restart()">🔄 Practice Again</button>
+
+    <div class="missed-box" id="missedBox" style="display:none">
+      <div class="missed-title">📖 Words to keep practicing:</div>
+      <div class="missed-grid" id="missedGrid"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const ALL_WORDS = [
+  {es:'luna',en:'moon'},{es:'dado',en:'dice'},{es:'flecha',en:'arrow'},
+  {es:'aroma',en:'aroma'},{es:'fe',en:'faith'},{es:'taxi',en:'taxi'},
+  {es:'dormitorio',en:'bedroom'},{es:'seis',en:'six'},{es:'crayones',en:'crayons'},
+  {es:'patio',en:'patio'},{es:'gorila',en:'gorilla'},{es:'destino',en:'destination'},
+  {es:'octubre',en:'October'},{es:'hermana',en:'sister'},{es:'cuarenta',en:'forty'},
+  {es:'sandalias',en:'sandals'},{es:'ofuscar',en:'obfuscate'},{es:'verano',en:'summer'},
+  {es:'bufanda',en:'scarf'},{es:'poeta',en:'poet'},{es:'noche',en:'night'},
+  {es:'gris',en:'grey'},{es:'atento',en:'attentive'},{es:'nudo',en:'knot'},
+  {es:'marrón',en:'brown'},{es:'inglés',en:'English'},{es:'vainilla',en:'vanilla'},
+  {es:'bolígrafo',en:'pen'},{es:'costa',en:'coast'},{es:'tigre',en:'tiger'},
+  {es:'español',en:'Spanish'},{es:'primero',en:'first'},{es:'habichuelas',en:'beans'},
+  {es:'dependienta',en:'store clerk'},{es:'educación',en:'education'},
+  {es:'baloncesto',en:'basketball'},{es:'hay',en:'there is / there are'},
+  {es:'acabar',en:'to finish'},{es:'triste',en:'sad'},{es:'mangas',en:'sleeves'},
+  {es:'candela',en:'candle'},{es:'esperar',en:'to wait'},{es:'litro',en:'liter'},
+  {es:'adoptar',en:'to adopt'},{es:'televisor',en:'television'},
+  {es:'madrugada',en:'early morning'},{es:'vivienda',en:'living place'},
+  {es:'oblongo',en:'oblong'},{es:'marcador',en:'marker'},
+  {es:'bisabuelo',en:'great grandfather'},{es:'invierno',en:'winter'},
+  {es:'actual',en:'actual'},{es:'larga',en:'long'},
+  {es:'subir',en:'to go up'},{es:'gloria',en:'glory'},{es:'escribir',en:'to write'},
+  {es:'tapete',en:'rug'},{es:'guantes',en:'gloves'},{es:'aldea',en:'village'},
+  {es:'escuela',en:'school'},{es:'alegre',en:'happy'},{es:'paloma',en:'pigeon'},
+  {es:'siempre',en:'always'},{es:'acampar',en:'camping'},{es:'sonrisa',en:'smile'},
+  {es:'examinar',en:'to examine'},{es:'concha',en:'shell'},{es:'peor',en:'worse'},
+  {es:'ganar',en:'to win'},{es:'familia',en:'family'},{es:'pagar',en:'to pay'},
+  {es:'zapatos',en:'shoes'},{es:'brazo',en:'arm'},{es:'doce',en:'twelve'},
+  {es:'azul',en:'blue'},{es:'venado',en:'deer'},{es:'cabeza',en:'head'},
+  {es:'espantapájaros',en:'scarecrow'},{es:'diecisiete',en:'seventeen'},
+  {es:'tradicionalmente',en:'traditionally'},{es:'tiza',en:'chalk'},
+  {es:'cumpleaños',en:'birthday'},{es:'venezolana',en:'Venezuelan'},
+  {es:'verso',en:'verse'},{es:'servir',en:'to serve'},
+  {es:'elefante',en:'elephant'},{es:'nariz',en:'nose'},
+  {es:'adivino',en:'fortune teller'},{es:'levantar',en:'to get up'},
+  {es:'pregunta',en:'question'},{es:'jamón',en:'ham'},{es:'portería',en:'goal'},
+  {es:'café',en:'coffee'},{es:'plátano',en:'banana'},{es:'también',en:'also'},
+  {es:'ventanas',en:'windows'},{es:'ojo',en:'eye'},{es:'peinar',en:'to comb'},
+  {es:'estufa',en:'stove'},{es:'futuro',en:'future'},{es:'sueño',en:'sleep'},
+  {es:'real',en:'real'},{es:'campana',en:'bell'},{es:'llevar',en:'to wear'},
+  {es:'baja',en:'short'},{es:'primavera',en:'spring'},{es:'verbal',en:'verbal'},
+  {es:'probar',en:'to try'},{es:'embargo',en:'embargo'},{es:'abolir',en:'to abolish'},
+  {es:'marzo',en:'March'},{es:'camiseta',en:'t-shirt'},{es:'uniforme',en:'uniform'},
+  {es:'catorce',en:'fourteen'},{es:'morado',en:'purple'},{es:'carpeta',en:'folder'},
+  {es:'señor',en:'Mr.'},
+  {es:'encanto',en:'charm'},{es:'pierna',en:'leg'},{es:'cepillar',en:'to brush'},
+  {es:'pequeña',en:'small'},{es:'valle',en:'valley'},{es:'chaqueta',en:'jacket'},
+  {es:'amado',en:'loved'},{es:'jugar',en:'to play'},{es:'cocina',en:'kitchen'},
+  {es:'tiempo',en:'time'},{es:'vuelo',en:'flight'},{es:'abrazo',en:'hug'},
+  {es:'diciembre',en:'December'},{es:'mañana',en:'morning'},{es:'toalla',en:'towel'},
+  {es:'auditorio',en:'auditorium'},{es:'silla',en:'chair'},
+  {es:'cucaracha',en:'cockroach'},{es:'uva',en:'grape'},{es:'tango',en:'tango'},
+  {es:'flaco',en:'thin'},{es:'tortuga',en:'turtle'},{es:'bondad',en:'goodness'},
+  {es:'pie',en:'foot'},{es:'corbata',en:'tie'},{es:'febrero',en:'February'},
+  {es:'abusivo',en:'abusive'},{es:'trece',en:'thirteen'},{es:'traje',en:'suit'},
+  {es:'bañadera',en:'bathtub'},{es:'sumar',en:'to add'},{es:'armario',en:'closet'},
+  {es:'puerta',en:'door'},{es:'borrador',en:'eraser'},{es:'cincuenta',en:'fifty'},
+  {es:'informar',en:'to inform'},{es:'rosado',en:'pink'},{es:'años',en:'years'},
+  {es:'pared',en:'wall'},{es:'entrada',en:'entrance'},{es:'mayo',en:'May'},
+  {es:'descansar',en:'to rest'},{es:'otear',en:'to scan'},{es:'cuaderno',en:'notebook'},
+  {es:'gusano',en:'worm'},{es:'segmento',en:'segment'},{es:'devolver',en:'to return'},
+  {es:'dibujar',en:'to draw'},{es:'bombilla',en:'lightbulb'},{es:'jirafa',en:'giraffe'},
+  {es:'treinta',en:'thirty'},{es:'orejas',en:'ears'},{es:'ciencias',en:'science'},
+  {es:'absorber',en:'to absorb'},{es:'quince',en:'fifteen'},
+  {es:'horizonte',en:'horizon'},{es:'cejas',en:'eyebrows'},{es:'lluvia',en:'rain'},
+  {es:'gimnasio',en:'gymnasium'},{es:'pizarra',en:'board'},
+  {es:'resolver',en:'to resolve'},{es:'respeto',en:'respect'},
+  {es:'dictador',en:'dictator'},{es:'pasillo',en:'hallway'},
+  {es:'mofarse',en:'to make fun of'},{es:'explotar',en:'to exploit'},
+  {es:'anaranjado',en:'orange'},{es:'necesitar',en:'to need'},
+  {es:'microondas',en:'microwave'},{es:'refrigerador',en:'refrigerator'},
+  {es:'pelirroja',en:'red-headed'},{es:'tranquila',en:'calm'},
+  {es:'bodega',en:'cellar'},{es:'jueves',en:'Thursday'},{es:'amable',en:'friendly'},
+  {es:'pronto',en:'soon'},{es:'tierra',en:'dirt'},{es:'deporte',en:'sport'},
+  {es:'cebra',en:'zebra'},{es:'diecinueve',en:'nineteen'},
+  {es:'calcetines',en:'socks'},{es:'veintisiete',en:'twenty-seven'},
+  {es:'hambre',en:'hunger'},{es:'cocodrilo',en:'crocodile'},{es:'gorra',en:'cap'},
+  {es:'pantalones',en:'pants'},{es:'llover',en:'to rain'},{es:'enojada',en:'angry'},
+  {es:'lavabo',en:'sink'},{es:'garaje',en:'garage'},
+  {es:'estudios sociales',en:'social studies'},{es:'llave',en:'key'},
+  {es:'abril',en:'April'},{es:'pluma',en:'pen'},{es:'vivir',en:'to live'},
+  {es:'presente',en:'present'},
+  {es:'computadoras',en:'computers'},{es:'granja',en:'farm'},
+  {es:'fácil',en:'easy'},{es:'número',en:'number'},{es:'receptor',en:'receiver'},
+  {es:'té',en:'tea'},{es:'bus escolar',en:'school bus'},{es:'tía',en:'aunt'},
+  {es:'pícher',en:'pitcher'},{es:'calculadora',en:'calculator'},
+  {es:'concreto',en:'concrete'},{es:'nido',en:'nest'},{es:'suerte',en:'luck'},
+  {es:'dorado',en:'gold'},{es:'caminar',en:'to walk'},{es:'pastel',en:'cake'},
+  {es:'blusa',en:'blouse'},{es:'bien',en:'well'},{es:'salida',en:'exit'},
+  {es:'nieve',en:'snow'},{es:'tímido',en:'shy'},{es:'menú',en:'menu'},
+  {es:'presentación',en:'presentation'},{es:'empezar',en:'to start'},
+  {es:'helado',en:'ice cream'},{es:'champiñón',en:'mushroom'},
+  {es:'jardinero',en:'gardener'},{es:'teléfono',en:'telephone'},
+  {es:'septiembre',en:'September'},{es:'amarillo',en:'yellow'},
+  {es:'nerviosa',en:'nervous'},{es:'bravo',en:'bravo'},
+  {es:'escarcha',en:'frost'},{es:'inteligente',en:'intelligent'},
+  {es:'sobremesa',en:'table talk'},{es:'balón',en:'ball'},
+  {es:'tío',en:'uncle'},{es:'campeona',en:'champion'},
+  {es:'planta baja',en:'ground floor'}
+];
+
+let words = [], idx = 0, numCorrect = 0, numWrong = 0, missed = [];
+let revealed = false, meaningShown = false;
+let voices = [];
+let selectedVoice = null;
+let speechRate = 1.0;
+let speechPitch = 1.3; // sharper
+
+function populateVoices() {
+  const v = window.speechSynthesis.getVoices();
+  if (v.length === 0) return; // not ready yet
+  voices = v;
+  const sel = document.getElementById('voiceSelect');
+  if (!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = '';
+
+  // Sort: Spanish voices first
+  const spanish = voices.filter(v => v.lang.startsWith('es'));
+  const others  = voices.filter(v => !v.lang.startsWith('es'));
+  const sorted  = [...spanish, ...others];
+
+  sorted.forEach((v, i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = v.name + ' (' + v.lang + ')';
+    // Mark Google/premium voices
+    if (v.name.toLowerCase().includes('google') || v.name.toLowerCase().includes('neural') || v.name.toLowerCase().includes('premium')) {
+      opt.textContent = '⭐ ' + opt.textContent;
+    }
+    sel.appendChild(opt);
+  });
+
+  // Restore or pick best voice — prefer Zuzana, then Google Spanish, then any Spanish
+  if (prev && sel.querySelector('option[value="' + prev + '"]')) {
+    sel.value = prev;
+  } else {
+    let bestIdx = sorted.findIndex(v => v.name.toLowerCase().includes('zuzana'));
+    if (bestIdx < 0) bestIdx = sorted.findIndex(v => v.lang.startsWith('es') && v.name.toLowerCase().includes('google'));
+    if (bestIdx < 0) bestIdx = sorted.findIndex(v => v.lang.startsWith('es'));
+    sel.selectedIndex = bestIdx >= 0 ? bestIdx : 0;
+  }
+  selectedVoice = sorted[parseInt(sel.selectedIndex)] || null;
+}
+
+// iOS: voices available immediately; Android/Chrome: need onvoiceschanged
+populateVoices();
+window.speechSynthesis.onvoiceschanged = populateVoices;
+setTimeout(populateVoices, 200);
+setTimeout(populateVoices, 800);
+
+function saveVoice() {
+  const sel = document.getElementById('voiceSelect');
+  const sorted = [...voices.filter(v=>v.lang.startsWith('es')), ...voices.filter(v=>!v.lang.startsWith('es'))];
+  selectedVoice = sorted[parseInt(sel.selectedIndex)] || null;
+  speakWord(); // preview
+}
+
+function updateSpeed(val) {
+  speechRate = parseFloat(val);
+  document.getElementById('speedVal').textContent = parseFloat(val).toFixed(1) + '×';
+}
+function updatePitch(val) {
+  speechPitch = parseFloat(val);
+  document.getElementById('pitchVal').textContent = parseFloat(val).toFixed(1) + '×';
+}
+
+function speakWord() {
+  if (!words[idx]) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(words[idx].es);
+  u.lang = 'es-US';
+  u.rate = speechRate;
+  u.pitch = speechPitch;
+  u.volume = 1.0;
+  if (selectedVoice) u.voice = selectedVoice;
+  const lbl = document.getElementById('speakLabel');
+  const btn = document.getElementById('btnSpeak');
+  btn.classList.add('speaking'); lbl.textContent = 'Speaking...';
+  u.onend = () => { btn.classList.remove('speaking'); lbl.textContent = 'Say the Word'; };
+  u.onerror = () => { btn.classList.remove('speaking'); lbl.textContent = 'Say the Word'; };
+  window.speechSynthesis.speak(u);
+}
+
+// Spelling Bee letter pronunciation rules
+const LETTER_NAMES = {
+  'a':'a','b':'b grande','c':'c','d':'d','e':'e','f':'efe','g':'ge',
+  'h':'hache','i':'i','j':'jota','k':'ka','l':'ele','m':'eme',
+  'n':'ene','ñ':'eñe','o':'o','p':'pe','q':'cu','r':'erre',
+  's':'ese','t':'te','u':'u','v':'v chica','w':'doble ve',
+  'x':'equis','y':'ye','z':'zeta',
+  'á':'a con accento','é':'e con accento','í':'i con accento',
+  'ó':'o con accento','ú':'u con accento','ü':'u con diéresis',
+  ' ':'espacio'
+};
+
+function spellOut() {
+  if (!words[idx]) return;
+  window.speechSynthesis.cancel();
+  const word = words[idx].es.toLowerCase();
+  const letters = Array.from(word); // handles multi-byte chars like ñ
+  const btn = document.getElementById('btnSpellOut');
+  btn.textContent = '🔤 Spelling...';
+  btn.disabled = true;
+
+  // Build a single utterance: "b grande, i, s, a, b, u, e, l, o. bisabuelo"
+  // Using a single utterance is required for iOS Safari (chained utterances are blocked)
+  const letterPart = letters.map(ch => LETTER_NAMES[ch] || ch).join(', ');
+  const fullText = letterPart + '. ' + words[idx].es;
+
+  const u = new SpeechSynthesisUtterance(fullText);
+  u.lang = 'es-US';
+  u.rate = Math.min(speechRate, 0.88); // slightly slower so letters are clear
+  u.pitch = speechPitch;
+  u.volume = 1.0;
+  if (selectedVoice) u.voice = selectedVoice;
+  u.onend = () => { btn.textContent = '🔤 Spell it out'; btn.disabled = false; };
+  u.onerror = () => { btn.textContent = '🔤 Spell it out'; btn.disabled = false; };
+  window.speechSynthesis.speak(u);
+}
+
+function toggleMeaning() {
+  meaningShown = !meaningShown;
+  const el = document.getElementById('meaningReveal');
+  const btn = document.getElementById('btnMeaning');
+  if (meaningShown) {
+    el.textContent = words[idx].en;
+    el.style.display = 'block';
+    btn.textContent = '🙈 Hide meaning';
+  } else {
+    el.style.display = 'none';
+    btn.textContent = '💬 Show English meaning';
+  }
+}
+
+function toggleReveal() {
+  revealed = !revealed;
+  const el = document.getElementById('answerReveal');
+  const btn = document.getElementById('btnReveal');
+  if (revealed) {
+    el.textContent = words[idx].es;
+    el.style.display = 'block';
+    btn.textContent = '🙈 Hide spelling';
+  } else {
+    el.style.display = 'none';
+    btn.textContent = '👁 Show spelling';
+  }
+}
+
+function shuffleNow() {
+  for (let i = words.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [words[i],words[j]] = [words[j],words[i]];
+  }
+  idx = 0; numCorrect = 0; numWrong = 0; missed = [];
+  document.getElementById('numCorrect').textContent = '0';
+  document.getElementById('numWrong').textContent = '0';
+  loadWord();
+}
+
+function flash(emoji) {
+  const f = document.getElementById('flash');
+  f.textContent = emoji;
+  f.className = 'feedback-flash show';
+  setTimeout(() => { f.className = 'feedback-flash hide'; }, 700);
+}
+
+function judge(isCorrect) {
+  if (isCorrect) {
+    numCorrect++;
+    flash('⭐');
+  } else {
+    numWrong++;
+    missed.push(words[idx]);
+    flash('💪');
+    // Auto-show correct spelling when wrong
+    if (!revealed) {
+      document.getElementById('answerReveal').textContent = words[idx].es;
+      document.getElementById('answerReveal').style.display = 'block';
+      document.getElementById('btnReveal').textContent = '🙈 Hide spelling';
+      revealed = true;
+    }
+    // Also show meaning
+    if (!meaningShown) {
+      document.getElementById('meaningReveal').textContent = words[idx].en;
+      document.getElementById('meaningReveal').style.display = 'block';
+      document.getElementById('btnMeaning').textContent = '🙈 Hide meaning';
+      meaningShown = true;
+    }
+  }
+  updateScore();
+
+  setTimeout(() => {
+    idx++;
+    if (idx >= words.length) { showEnd(); return; }
+    loadWord();
+  }, isCorrect ? 300 : 1200);
+}
+
+function loadWord() {
+  revealed = false; meaningShown = false;
+  document.getElementById('wordCounter').textContent = 'Word ' + (idx+1) + ' of ' + words.length;
+  document.getElementById('answerReveal').style.display = 'none';
+  document.getElementById('btnReveal').textContent = '👁 Show spelling';
+  document.getElementById('meaningReveal').style.display = 'none';
+  document.getElementById('btnMeaning').textContent = '💬 Show meaning';
+  document.getElementById('btnSpellOut').textContent = '🔤 Spell it out';
+  document.getElementById('btnSpellOut').disabled = false;
+  document.getElementById('btnSpeak').classList.remove('speaking');
+  document.getElementById('speakLabel').textContent = 'Say the Word';
+  document.getElementById('progressBar').style.width = (idx / words.length * 100) + '%';
+  document.getElementById('numLeft').textContent = words.length - idx;
+  // Note: auto-speak skipped — iOS Safari requires a direct user tap to play audio
+}
+
+function updateScore() {
+  document.getElementById('numCorrect').textContent = numCorrect;
+  document.getElementById('numWrong').textContent = numWrong;
+  document.getElementById('numLeft').textContent = words.length - idx - 1;
+}
+
+function showEnd() {
+  document.getElementById('quizScreen').style.display = 'none';
+  document.getElementById('endScreen').style.display = 'block';
+  const total = numCorrect + numWrong;
+  const pct = total ? Math.round(numCorrect/total*100) : 0;
+  document.getElementById('endScore').textContent = numCorrect + ' / ' + total;
+  document.getElementById('endPct').textContent = pct + '% correct';
+
+  let trophy = '🏆', msg = '';
+  if (pct === 100) { trophy='🥇'; msg='PERFECT! You\'re going to WIN the Spelling Bee! 🎉'; }
+  else if (pct >= 85) { trophy='🏆'; msg='Amazing job! Almost there — review the missed ones tonight!'; }
+  else if (pct >= 70) { trophy='⭐'; msg='Great effort! A couple more practice rounds and you\'ll ace it!'; }
+  else { trophy='💪'; msg='Good start! Practice the missed words and try again!'; }
+  document.getElementById('endTrophy').textContent = trophy;
+  document.getElementById('endMsg').textContent = msg;
+
+  if (missed.length > 0) {
+    const grid = document.getElementById('missedGrid');
+    grid.innerHTML = '';
+    missed.forEach(w => {
+      const d = document.createElement('div');
+      d.className = 'missed-item';
+      d.innerHTML = '<div class="missed-es">' + w.es + '</div><div class="missed-en">' + w.en + '</div>';
+      grid.appendChild(d);
+    });
+    document.getElementById('missedBox').style.display = 'block';
+  }
+}
+
+function restart() {
+  idx = 0; numCorrect = 0; numWrong = 0; missed = [];
+  words = [...ALL_WORDS];
+  for (let i = words.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [words[i],words[j]] = [words[j],words[i]];
+  }
+  document.getElementById('endScreen').style.display = 'none';
+  document.getElementById('quizScreen').style.display = 'block';
+  document.getElementById('missedBox').style.display = 'none';
+  document.getElementById('numCorrect').textContent = '0';
+  document.getElementById('numWrong').textContent = '0';
+  loadWord();
+}
+
+restart();
+</script>
+</body>
+</html>
